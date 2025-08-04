@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stellar Token Trading - Multi-Wallet Support</title>
+    <title>Stellar DEX - LAAM Trading Platform</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/stellar-sdk/11.2.2/stellar-sdk.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@albedo-link/intent@0.13.0/lib/albedo.intent.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         * {
             margin: 0;
@@ -14,245 +15,447 @@
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0e1a;
+            color: #ffffff;
             min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-
-        .container {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 40px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-            max-width: 500px;
-            width: 100%;
-            transition: transform 0.3s ease;
-        }
-
-        .container:hover {
-            transform: translateY(-5px);
+            overflow-x: hidden;
         }
 
         .header {
-            text-align: center;
-            margin-bottom: 30px;
+            background: linear-gradient(135deg, #1a1f2e 0%, #16213e 100%);
+            padding: 20px 0;
+            border-bottom: 1px solid #2a3441;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
         }
 
-        .header h1 {
-            color: #333;
-            font-size: 2.5em;
-            margin-bottom: 10px;
-            background: linear-gradient(45deg, #667eea, #764ba2);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
-        .header p {
-            color: #666;
-            font-size: 1.1em;
-        }
-
-        .wallet-selection {
-            margin-bottom: 30px;
-        }
-
-        .wallet-selection h3 {
-            color: #333;
-            margin-bottom: 15px;
+        .logo {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
+            font-size: 24px;
+            font-weight: 700;
+            color: #00d4ff;
         }
 
-        .wallet-options {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #00d4ff, #0099cc);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        .wallet-section {
+            display: flex;
+            align-items: center;
             gap: 15px;
         }
 
+        .wallet-selector {
+            display: flex;
+            background: #1e2530;
+            border-radius: 8px;
+            padding: 4px;
+            border: 1px solid #2a3441;
+        }
+
         .wallet-option {
-            position: relative;
-        }
-
-        .wallet-option input[type="radio"] {
-            position: absolute;
-            opacity: 0;
-            cursor: pointer;
-        }
-
-        .wallet-option label {
-            display: block;
-            padding: 15px;
-            border: 2px solid #e1e5e9;
-            border-radius: 10px;
+            padding: 8px 16px;
+            border-radius: 6px;
             cursor: pointer;
             transition: all 0.3s ease;
-            text-align: center;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .wallet-option.active {
+            background: #00d4ff;
+            color: #0a0e1a;
+        }
+
+        .wallet-option:not(.active) {
+            color: #8892b0;
+        }
+
+        .wallet-option:not(.active):hover {
+            background: #2a3441;
+            color: #ffffff;
+        }
+
+        .connect-btn {
+            background: linear-gradient(135deg, #00d4ff, #0099cc);
+            color: #0a0e1a;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
             font-weight: 600;
-            background: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
         }
 
-        .wallet-option input[type="radio"]:checked + label {
-            border-color: #667eea;
-            background: linear-gradient(45deg, #667eea, #764ba2);
-            color: white;
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
-        }
-
-        .wallet-option label:hover {
-            border-color: #667eea;
+        .connect-btn:hover {
             transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 212, 255, 0.3);
         }
 
-        .trading-section {
-            margin-bottom: 30px;
+        .connect-btn:disabled {
+            background: #2a3441;
+            color: #8892b0;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
         }
 
-        .section-title {
-            font-size: 1.3em;
-            color: #333;
-            margin-bottom: 15px;
+        .main-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 30px 20px;
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 30px;
+        }
+
+        .trading-panel {
+            background: #1e2530;
+            border-radius: 16px;
+            border: 1px solid #2a3441;
+            overflow: hidden;
+        }
+
+        .panel-header {
+            background: linear-gradient(135deg, #1a1f2e, #16213e);
+            padding: 20px 25px;
+            border-bottom: 1px solid #2a3441;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .panel-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #ffffff;
             display: flex;
             align-items: center;
             gap: 10px;
         }
 
-        .icon {
-            width: 24px;
-            height: 24px;
-            fill: currentColor;
+        .laam-badge {
+            background: linear-gradient(135deg, #ff6b35, #f7931e);
+            color: #ffffff;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .panel-content {
+            padding: 25px;
+        }
+
+        .price-display {
+            background: linear-gradient(135deg, #1a1f2e, #16213e);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 25px;
+            border: 1px solid #2a3441;
+        }
+
+        .current-price {
+            font-size: 32px;
+            font-weight: 700;
+            color: #00d4ff;
+            margin-bottom: 8px;
+        }
+
+        .price-change {
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .price-change.positive {
+            color: #00ff88;
+        }
+
+        .price-change.negative {
+            color: #ff4757;
+        }
+
+        .trading-tabs {
+            display: flex;
+            background: #16213e;
+            border-radius: 8px;
+            padding: 4px;
+            margin-bottom: 25px;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 12px;
+            text-align: center;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .tab.active {
+            background: #00d4ff;
+            color: #0a0e1a;
+        }
+
+        .tab:not(.active) {
+            color: #8892b0;
+        }
+
+        .tab:not(.active):hover {
+            background: #1e2530;
+            color: #ffffff;
         }
 
         .form-group {
             margin-bottom: 20px;
         }
 
-        .form-group label {
+        .form-label {
             display: block;
             margin-bottom: 8px;
-            color: #555;
-            font-weight: 600;
+            color: #8892b0;
+            font-size: 14px;
+            font-weight: 500;
         }
 
-        .form-group input, .form-group select {
+        .form-input {
             width: 100%;
-            padding: 15px;
-            border: 2px solid #e1e5e9;
-            border-radius: 10px;
+            background: #16213e;
+            border: 1px solid #2a3441;
+            border-radius: 8px;
+            padding: 14px 16px;
+            color: #ffffff;
             font-size: 16px;
             transition: all 0.3s ease;
-            background: white;
         }
 
-        .form-group input:focus, .form-group select:focus {
+        .form-input:focus {
             outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            border-color: #00d4ff;
+            box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1);
         }
 
-        .button-group {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin-bottom: 20px;
+        .form-input::placeholder {
+            color: #64748b;
         }
 
-        .btn {
-            padding: 15px 25px;
+        .input-group {
+            position: relative;
+        }
+
+        .input-suffix {
+            position: absolute;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #8892b0;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .trade-button {
+            width: 100%;
+            padding: 16px;
             border: none;
-            border-radius: 10px;
+            border-radius: 8px;
             font-size: 16px;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 0.5px;
         }
 
-        .btn-buy {
-            background: linear-gradient(45deg, #4CAF50, #45a049);
-            color: white;
+        .trade-button.buy {
+            background: linear-gradient(135deg, #00ff88, #00cc6a);
+            color: #0a0e1a;
         }
 
-        .btn-buy:hover {
-            background: linear-gradient(45deg, #45a049, #3d8b40);
+        .trade-button.sell {
+            background: linear-gradient(135deg, #ff4757, #ff3742);
+            color: #ffffff;
+        }
+
+        .trade-button:hover {
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(76, 175, 80, 0.3);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
         }
 
-        .btn-sell {
-            background: linear-gradient(45deg, #f44336, #d32f2f);
-            color: white;
+        .trade-button:disabled {
+            background: #2a3441;
+            color: #64748b;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
         }
 
-        .btn-sell:hover {
-            background: linear-gradient(45deg, #d32f2f, #b71c1c);
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(244, 67, 54, 0.3);
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
         }
 
-        .btn-connect {
-            background: linear-gradient(45deg, #667eea, #764ba2);
-            color: white;
-            width: 100%;
-            margin-bottom: 20px;
+        .market-stats {
+            background: #1e2530;
+            border-radius: 16px;
+            border: 1px solid #2a3441;
+            padding: 20px;
         }
 
-        .btn-connect:hover {
-            background: linear-gradient(45deg, #764ba2, #667eea);
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #2a3441;
         }
 
-        .status {
-            padding: 15px;
-            border-radius: 10px;
-            margin-bottom: 20px;
+        .stat-item:last-child {
+            border-bottom: none;
+        }
+
+        .stat-label {
+            color: #8892b0;
+            font-size: 14px;
+        }
+
+        .stat-value {
+            color: #ffffff;
             font-weight: 600;
-            text-align: center;
+            font-size: 14px;
         }
 
-        .status.success {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
+        .chart-container {
+            background: #1e2530;
+            border-radius: 16px;
+            border: 1px solid #2a3441;
+            padding: 20px;
+            height: 300px;
         }
 
-        .status.error {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
+        .order-book {
+            background: #1e2530;
+            border-radius: 16px;
+            border: 1px solid #2a3441;
+            overflow: hidden;
         }
 
-        .status.info {
-            background: #d1ecf1;
-            color: #0c5460;
-            border: 1px solid #bee5eb;
+        .order-book-header {
+            background: #16213e;
+            padding: 15px 20px;
+            border-bottom: 1px solid #2a3441;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #8892b0;
+            text-transform: uppercase;
+        }
+
+        .order-book-content {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .order-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            padding: 8px 20px;
+            font-size: 13px;
+            border-bottom: 1px solid #2a3441;
+        }
+
+        .order-row:hover {
+            background: #16213e;
+        }
+
+        .order-price.buy {
+            color: #00ff88;
+        }
+
+        .order-price.sell {
+            color: #ff4757;
         }
 
         .wallet-info {
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-        }
-
-        .wallet-info h3 {
-            color: #333;
-            margin-bottom: 10px;
+            background: #1e2530;
+            border-radius: 16px;
+            border: 1px solid #2a3441;
+            padding: 20px;
         }
 
         .balance-item {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 5px;
-            color: #666;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #2a3441;
+        }
+
+        .balance-item:last-child {
+            border-bottom: none;
+        }
+
+        .balance-label {
+            color: #8892b0;
+            font-size: 14px;
+        }
+
+        .balance-value {
+            color: #ffffff;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .status-message {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .status-message.success {
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            color: #00ff88;
+        }
+
+        .status-message.error {
+            background: rgba(255, 71, 87, 0.1);
+            border: 1px solid rgba(255, 71, 87, 0.3);
+            color: #ff4757;
+        }
+
+        .status-message.info {
+            background: rgba(0, 212, 255, 0.1);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            color: #00d4ff;
         }
 
         .hidden {
@@ -261,10 +464,10 @@
 
         .loading {
             display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #667eea;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #2a3441;
+            border-top: 2px solid #00d4ff;
             border-radius: 50%;
             animation: spin 1s linear infinite;
         }
@@ -274,324 +477,204 @@
             100% { transform: rotate(360deg); }
         }
 
-        .price-info {
-            background: #e3f2fd;
-            padding: 15px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            text-align: center;
-        }
-
-        .price-info h3 {
-            color: #1976d2;
-            margin-bottom: 10px;
-        }
-
-        .price-display {
-            font-size: 1.5em;
-            font-weight: bold;
-            color: #333;
-        }
-
-        @media (max-width: 600px) {
-            .container {
-                padding: 20px;
-                margin: 10px;
-            }
-            
-            .header h1 {
-                font-size: 2em;
-            }
-            
-            .button-group, .wallet-options {
+        @media (max-width: 1024px) {
+            .main-container {
                 grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .header-content {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .wallet-section {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .main-container {
+                padding: 20px 15px;
+            }
+            
+            .panel-content {
+                padding: 20px;
+            }
+            
+            .current-price {
+                font-size: 24px;
             }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>🚀 Stellar Trading</h1>
-            <p>Multi-Wallet Support for Stellar Token Trading</p>
-        </div>
-
-        <div id="status" class="status hidden"></div>
-
-        <div class="wallet-selection">
-            <h3>
-                <svg class="icon" viewBox="0 0 24 24">
-                    <path d="M21 18v1c0 1.1-.9 2-2 2H5c-1.11 0-2-.9-2-2V5c0-1.1.89-2 2-2h14c1.1 0 2 .9 2 2v1h-9c-1.11 0-2 .9-2 2v8c0 1.1.89 2 2 2h9zm-9-2h10V8H12v8zm4-2.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/>
-                </svg>
-                Select Wallet
-            </h3>
-            <div class="wallet-options">
-                <div class="wallet-option">
-                    <input type="radio" id="lobster" name="wallet" value="lobster" checked>
-                    <label for="lobster">🦞 Lobster Wallet</label>
-                </div>
-                <div class="wallet-option">
-                    <input type="radio" id="albedo" name="wallet" value="albedo">
-                    <label for="albedo">⭐ Albedo.link</label>
-                </div>
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                <div class="logo-icon">⭐</div>
+                <span>Stellar DEX</span>
+                <div class="laam-badge">LAAM Focus</div>
             </div>
-        </div>
-
-        <button id="connectWallet" class="btn btn-connect">
-            <span id="connectText">Connect Wallet</span>
-            <span id="connectLoading" class="loading hidden"></span>
-        </button>
-
-        <div id="walletInfo" class="wallet-info hidden">
-            <h3>💼 Wallet Information</h3>
-            <div class="balance-item">
-                <span>Public Key:</span>
-                <span id="publicKey">-</span>
-            </div>
-            <div class="balance-item">
-                <span>XLM Balance:</span>
-                <span id="xlmBalance">-</span>
-            </div>
-            <div class="balance-item">
-                <span>Asset Balance:</span>
-                <span id="assetBalance">-</span>
-            </div>
-        </div>
-
-        <div id="priceInfo" class="price-info hidden">
-            <h3>📊 Current Market Price</h3>
-            <div class="price-display" id="currentPrice">Loading...</div>
-            <small id="pricePair">Asset/XLM</small>
-        </div>
-
-        <div id="tradingInterface" class="hidden">
-            <div class="trading-section">
-                <h2 class="section-title">
-                    <svg class="icon" viewBox="0 0 24 24">
-                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                    </svg>
-                    Asset Configuration
-                </h2>
-
-                <div class="form-group">
-                    <label for="assetCode">Asset Code</label>
-                    <input type="text" id="assetCode" placeholder="e.g., LAAM, AQUA, USDC" value="LAAM" maxlength="12">
+            
+            <div class="wallet-section">
+                <div class="wallet-selector">
+                    <div class="wallet-option active" data-wallet="lobster">🦞 Lobster</div>
+                    <div class="wallet-option" data-wallet="albedo">⭐ Albedo</div>
                 </div>
-
-                <div class="form-group">
-                    <label for="assetIssuer">Asset Issuer (Public Key)</label>
-                    <input type="text" id="assetIssuer" placeholder="GXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX" value="GAL4ECDAXNBMJYFCWIJ32HKVIRLCNEXY664CAZYI3EINQWPLXTMEPR64">
-                </div>
-
-                <button id="setAssetBtn" class="btn btn-connect" style="margin-bottom: 20px;">
-                    Set Trading Asset
+                <button id="connectBtn" class="connect-btn">
+                    <span id="connectText">Connect Wallet</span>
+                    <span id="connectLoading" class="loading hidden"></span>
                 </button>
             </div>
+        </div>
+    </header>
 
-            <div id="tradingSection" class="trading-section hidden">
-                <h2 class="section-title">
-                    <svg class="icon" viewBox="0 0 24 24">
-                        <path d="M7 14l5-5 5 5z"/>
-                    </svg>
-                    Trading Interface
-                </h2>
-
-                <div class="form-group">
-                    <label for="tradeType">Trade Type</label>
-                    <select id="tradeType">
-                        <option value="buy">Buy Asset with XLM</option>
-                        <option value="sell">Sell Asset for XLM</option>
-                    </select>
+    <div class="main-container">
+        <div class="trading-panel">
+            <div class="panel-header">
+                <div class="panel-title">
+                    🚀 LAAM Trading
+                </div>
+                <div style="color: #8892b0; font-size: 14px;">LAAM/XLM</div>
+            </div>
+            
+            <div class="panel-content">
+                <div id="statusMessage" class="status-message info">
+                    Welcome to Stellar DEX! Connect your wallet to start trading LAAM tokens.
                 </div>
 
-                <div class="form-group">
-                    <label for="amount">Amount</label>
-                    <input type="number" id="amount" placeholder="Enter amount" step="0.0000001" min="0">
+                <div class="price-display">
+                    <div class="current-price" id="currentPrice">0.041 XLM</div>
+                    <div class="price-change positive" id="priceChange">+4.2% (24h)</div>
                 </div>
 
-                <div class="form-group">
-                    <label for="price">Price (XLM per Asset)</label>
-                    <input type="number" id="price" placeholder="Enter price" step="0.0000001" min="0">
+                <div class="trading-tabs">
+                    <div class="tab active" data-tab="buy">Buy LAAM</div>
+                    <div class="tab" data-tab="sell">Sell LAAM</div>
                 </div>
 
-                <div class="button-group">
-                    <button id="buyBtn" class="btn btn-buy">
-                        📈 Buy Asset
-                    </button>
-                    <button id="sellBtn" class="btn btn-sell">
-                        📉 Sell Asset
+                <div id="tradingForm">
+                    <div class="form-group">
+                        <label class="form-label">Amount (LAAM)</label>
+                        <div class="input-group">
+                            <input type="number" id="amountInput" class="form-input" placeholder="0.00" step="0.0000001" min="0">
+                            <span class="input-suffix">LAAM</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Price (XLM per LAAM)</label>
+                        <div class="input-group">
+                            <input type="number" id="priceInput" class="form-input" placeholder="0.041" step="0.0000001" min="0" value="0.041">
+                            <span class="input-suffix">XLM</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Total (XLM)</label>
+                        <div class="input-group">
+                            <input type="number" id="totalInput" class="form-input" placeholder="0.00" readonly>
+                            <span class="input-suffix">XLM</span>
+                        </div>
+                    </div>
+
+                    <button id="tradeBtn" class="trade-button buy" disabled>
+                        Connect Wallet to Trade
                     </button>
                 </div>
             </div>
         </div>
-    </div>
 
-    <script>
-        // Stellar SDK setup
-        const StellarSdk = window.StellarSdk;
-        const server = new StellarSdk.Horizon.Server('https://horizon.stellar.org');
-        
-        // Asset configuration
-        let CUSTOM_ASSET = null;
-        const XLM_ASSET = StellarSdk.Asset.native();
+        <div class="sidebar">
+            <div class="wallet-info">
+                <div class="panel-header">
+                    <div class="panel-title">💼 Wallet</div>
+                </div>
+                <div style="padding: 20px;">
+                    <div class="balance-item">
+                        <span class="balance-label">Public Key</span>
+                        <span class="balance-value" id="publicKey">Not connected</span>
+                    </div>
+                    <div class="balance-item">
+                        <span class="balance-label">XLM Balance</span>
+                        <span class="balance-value" id="xlmBalance">0 XLM</span>
+                    </div>
+                    <div class="balance-item">
+                        <span class="balance-label">LAAM Balance</span>
+                        <span class="balance-value" id="laamBalance">0 LAAM</span>
+                    </div>
+                </div>
+            </div>
 
-        let userPublicKey = null;
-        let userAccount = null;
-        let selectedWallet = 'lobster';
+            <div class="market-stats">
+                <div class="panel-header">
+                    <div class="panel-title">📊 Market Stats</div>
+                </div>
+                <div style="padding: 20px;">
+                    <div class="stat-item">
+                        <span class="stat-label">24h Volume</span>
+                        <span class="stat-value">11 USD</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Total Supply</span>
+                        <span class="stat-value">1.34M LAAM</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Trustlines</span>
+                        <span class="stat-value">5</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Market Cap</span>
+                        <span class="stat-value">$54,847</span>
+                    </div>
+                </div>
+            </div>
 
-        // DOM elements
-        const connectWalletBtn = document.getElementById('connectWallet');
-        const connectText = document.getElementById('connectText');
-        const connectLoading = document.getElementById('connectLoading');
-        const statusDiv = document.getElementById('status');
-        const walletInfo = document.getElementById('walletInfo');
-        const tradingInterface = document.getElementById('tradingInterface');
-        const tradingSection = document.getElementById('tradingSection');
-        const priceInfo = document.getElementById('priceInfo');
-        const buyBtn = document.getElementById('buyBtn');
-        const sellBtn = document.getElementById('sellBtn');
-        const tradeTypeSelect = document.getElementById('tradeType');
-        const amountInput = document.getElementById('amount');
-        const priceInput = document.getElementById('price');
-        const assetCodeInput = document.getElementById('assetCode');
-        const assetIssuerInput = document.getElementById('assetIssuer');
-        const setAssetBtn = document.getElementById('setAssetBtn');
-        const walletRadios = document.querySelectorAll('input[name="wallet"]');
+            <div class="chart-container">
+                <div class="panel-header">
+                    <div class="panel-title">📈 Price Chart</div>
+                </div>
+                <canvas id="priceChart" style="margin-top: 20px;"></canvas>
+            </div>
 
-        // Utility functions
-        function showStatus(message, type = 'info') {
-            statusDiv.textContent = message;
-            statusDiv.className = `status ${type}`;
-            statusDiv.classList.remove('hidden');
-            setTimeout(() => {
-                statusDiv.classList.add('hidden');
-            }, 5000);
-        }
-
-        function setLoading(isLoading) {
-            if (isLoading) {
-                connectText.classList.add('hidden');
-                connectLoading.classList.remove('hidden');
-                connectWalletBtn.disabled = true;
-            } else {
-                connectText.classList.remove('hidden');
-                connectLoading.classList.add('hidden');
-                connectWalletBtn.disabled = false;
-            }
-        }
-
-        function updateConnectButtonText() {
-            const walletName = selectedWallet === 'lobster' ? 'Lobster Wallet' : 'Albedo.link';
-            connectText.textContent = `Connect ${walletName}`;
-        }
-
-        // Set custom asset function
-        function setAsset() {
-            try {
-                const assetCode = assetCodeInput.value.trim().toUpperCase();
-                const assetIssuer = assetIssuerInput.value.trim();
-
-                if (!assetCode) {
-                    throw new Error('Asset code is required');
-                }
-
-                if (assetCode === 'XLM') {
-                    CUSTOM_ASSET = StellarSdk.Asset.native();
-                } else {
-                    if (!assetIssuer) {
-                        throw new Error('Asset issuer is required for non-native assets');
-                    }
-
-                    if (!StellarSdk.StrKey.isValidEd25519PublicKey(assetIssuer)) {
-                        throw new Error('Invalid issuer public key format');
-                    }
-
-                    CUSTOM_ASSET = new StellarSdk.Asset(assetCode, assetIssuer);
-                }
-
-                // Update UI
-                document.getElementById('pricePair').textContent = `${assetCode}/XLM`;
-                tradingSection.classList.remove('hidden');
-                setAssetBtn.textContent = `Asset Set: ${assetCode} ✓`;
-                setAssetBtn.style.background = '#4CAF50';
-                setAssetBtn.disabled = true;
-
-                // Update balance if wallet is connected
-                if (userAccount) {
-                    updateAssetBalance();
-                }
-
-                showStatus(`Asset ${assetCode} configured successfully!`, 'success');
-
-            } catch (error) {
-                console.error('Error setting asset:', error);
-                showStatus('Error setting asset: ' + error.message, 'error');
-            }
-        }
-
-        // Update asset balance
-        function updateAssetBalance() {
-            if (!userAccount || !CUSTOM_ASSET) return;
-
-            let assetBalance;
-            if (CUSTOM_ASSET.isNative()) {
-                assetBalance = userAccount.balances.find(balance => balance.asset_type === 'native');
-            } else {
-                assetBalance = userAccount.balances.find(balance => 
-                    balance.asset_code === CUSTOM_ASSET.code && 
-                    balance.asset_issuer === CUSTOM_ASSET.issuer
-                );
-            }
-
-            const assetCode = CUSTOM_ASSET.isNative() ? 'XLM' : CUSTOM_ASSET.code;
-            document.getElementById('assetBalance').textContent = assetBalance ? assetBalance.balance + ` ${assetCode}` : `0 ${assetCode}`;
-        }
-
-        // Connect wallet function
-        async function connectWallet() {
-            try {
-                setLoading(true);
-                showStatus(`Connecting to ${selectedWallet === 'lobster' ? 'Lobster wallet' : 'Albedo.link'}...`, 'info');
-
-                if (selectedWallet === 'albedo') {
-                    // Use Albedo.link
-                    const result = await albedo.publicKey({
-                        token: Math.random().toString(36).substring(2, 15)
-                    });
-                    
-                    userPublicKey = result.pubkey;
-                } else {
-                    // Use Lobster (demo mode)
-                    const demoPublicKey = prompt('Enter your Stellar public key for demo:');
-                    
-                    if (!demoPublicKey) {
-                        throw new Error('Public key is required');
-                    }
-
-                    if (!StellarSdk.StrKey.isValidEd25519PublicKey(demoPublicKey)) {
-                        throw new Error('Invalid public key format');
-                    }
-
-                    userPublicKey = demoPublicKey;
-                }
-                
-                // Load account information
-                userAccount = await server.loadAccount(userPublicKey);
-                
-                // Update UI
-                document.getElementById('publicKey').textContent = userPublicKey.substring(0, 10) + '...';
-                
-                // Get balances
-                const xlmBalance = userAccount.balances.find(balance => balance.asset_type === 'native');
-                document.getElementById('xlmBalance').textContent = xlmBalance ? xlmBalance.balance + ' XLM' : '0 XLM';
-
-                // Update custom asset balance if set
-                if (CUSTOM_ASSET) {
-                    updateAssetBalance();
-                } else {
-                    document.getElementById('assetBalance').textContent = '0 (Set asset first)';
-                }
-
-                // Show wallet info and trading interface
-                walletInfo.classList.remove('hidden');
-                tradingInterface.cl
+            <div class="order-book">
+                <div class="panel-header">
+                    <div class="panel-title">📋 Order Book</div>
+                </div>
+                <div class="order-book-header">
+                    <span>Price (XLM)</span>
+                    <span>Amount (LAAM)</span>
+                    <span>Total (XLM)</span>
+                </div>
+                <div class="order-book-content">
+                    <div class="order-row">
+                        <span class="order-price sell">0.0425</span>
+                        <span>150.00</span>
+                        <span>6.375</span>
+                    </div>
+                    <div class="order-row">
+                        <span class="order-price sell">0.0420</span>
+                        <span>200.00</span>
+                        <span>8.400</span>
+                    </div>
+                    <div class="order-row">
+                        <span class="order-price sell">0.0415</span>
+                        <span>300.00</span>
+                        <span>12.450</span>
+                    </div>
+                    <div class="order-row">
+                        <span class="order-price buy">0.0410</span>
+                        <span>250.00</span>
+                        <span>10.250</span>
+                    </div>
+                    <div class="order-row">
+                        <span class="order-price buy">0.0405</span>
+                        <span>180.00</span>
+                        <span>7.290</span>
+                    </div>
+                    <div class="order-row">
+                        <span class="order-price buy">0.0400</span>
+                        <span>400.00</span>
+                        <sp
