@@ -2,105 +2,22 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Laam Token DEX</title>
-
-  <!-- Stellar SDK -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/stellar-sdk/10.4.0/stellar-sdk.min.js"></script>
-  <!-- Albedo Wallet Connect -->
+  <title>Test Wallet Connect</title>
   <script src="https://albedo.link/embed.js"></script>
-
-  <style>
-    body {
-      font-family: sans-serif;
-      padding: 20px;
-      background: #f9f9f9;
-    }
-    .dex-box {
-      max-width: 400px;
-      margin: auto;
-      padding: 20px;
-      background: white;
-      border-radius: 12px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-    }
-    input {
-      width: 100%;
-      padding: 10px;
-      margin-top: 5px;
-      margin-bottom: 15px;
-    }
-    button {
-      padding: 10px 20px;
-      margin-right: 10px;
-      cursor: pointer;
-    }
-  </style>
 </head>
 <body>
-
-  <div class="dex-box">
-    <h2>Buy/Sell Laam Token</h2>
-    <button onclick="connectWallet()">🔐 Connect Wallet</button>
-    <p id="walletStatus">Wallet not connected</p>
-
-    <label>Amount:</label>
-    <input type="number" id="amount" placeholder="Amount">
-
-    <label>Price (per LAAM):</label>
-    <input type="number" id="price" placeholder="e.g. 0.05">
-
-    <button onclick="submitOffer('buy')">BUY</button>
-    <button onclick="submitOffer('sell')">SELL</button>
-
-    <p id="txStatus"></p>
-  </div>
+  <button onclick="connectWallet()">🔐 Connect Wallet</button>
+  <p id="walletStatus">Wallet not connected</p>
 
   <script>
-    const server = new StellarSdk.Server("https://horizon.stellar.org");
-    const laamAsset = new StellarSdk.Asset("Laam", "GAL4ECDAXNBMJYFCWIJ32HKVIRLCNEXY664CAZYI3EINQWPLXTMEPR64");
-    let pubKey = null;
-
     async function connectWallet() {
       try {
-        const res = await albedo.publicKey({});
-        pubKey = res.pubkey;
-        document.getElementById("walletStatus").innerText = "Connected: " + pubKey;
-      } catch (e) {
-        document.getElementById("walletStatus").innerText = "Connection failed.";
-      }
-    }
-
-    async function submitOffer(type) {
-      if (!pubKey) return alert("Connect your wallet first");
-      const amount = document.getElementById("amount").value;
-      const price = document.getElementById("price").value;
-
-      const selling = type === "sell" ? laamAsset : StellarSdk.Asset.native();
-      const buying = type === "buy" ? laamAsset : StellarSdk.Asset.native();
-
-      const account = await server.loadAccount(pubKey);
-      const fee = await server.fetchBaseFee();
-
-      const tx = new StellarSdk.TransactionBuilder(account, {
-        fee,
-        networkPassphrase: StellarSdk.Networks.PUBLIC
-      })
-        .addOperation(StellarSdk.Operation.manageSellOffer({
-          selling,
-          buying,
-          amount,
-          price,
-          offerId: "0"
-        }))
-        .setTimeout(100)
-        .build();
-
-      try {
-        const result = await albedo.tx({xdr: tx.toXDR(), network: "public"});
-        document.getElementById("txStatus").innerText = "✅ Transaction submitted!";
-      } catch (e) {
-        console.error(e);
-        document.getElementById("txStatus").innerText = "❌ Transaction failed";
+        const res = await albedo.publicKey();
+        document.getElementById("walletStatus").innerText = "Connected: " + res.pubkey;
+        console.log("Public key:", res.pubkey);
+      } catch (err) {
+        document.getElementById("walletStatus").innerText = "❌ Failed to connect";
+        console.error(err);
       }
     }
   </script>
