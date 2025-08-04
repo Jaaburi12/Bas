@@ -1,364 +1,108 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Laam Token - Modern Digital Currency</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+  <meta charset="UTF-8">
+  <title>Laam Token DEX</title>
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-        }
+  <!-- Stellar SDK -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/stellar-sdk/10.4.0/stellar-sdk.min.js"></script>
+  <!-- Albedo Wallet Connect -->
+  <script src="https://albedo.link/embed.js"></script>
 
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-
-        .header {
-            text-align: center;
-            margin-bottom: 40px;
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 20px;
-            padding: 30px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-            backdrop-filter: blur(10px);
-        }
-
-        .logo {
-            max-width: 150px;
-            height: auto;
-            margin-bottom: 20px;
-            transition: transform 0.3s ease;
-        }
-
-        .logo:hover {
-            transform: scale(1.05);
-        }
-
-        .title {
-            font-size: 3rem;
-            font-weight: 700;
-            color: #2c3e50;
-            margin-bottom: 10px;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
-            text-transform: uppercase;
-            letter-spacing: 2px;
-        }
-
-        .subtitle {
-            font-size: 1.2rem;
-            color: #7f8c8d;
-            margin-bottom: 30px;
-        }
-
-        .content-section {
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 20px;
-            padding: 40px;
-            margin-bottom: 40px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-            backdrop-filter: blur(10px);
-        }
-
-        .content-title {
-            font-size: 3rem;
-            color: #2c3e50;
-            margin-bottom: 30px;
-            text-align: center;
-            position: relative;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-        }
-
-        .content-title::after {
-            content: '';
-            position: absolute;
-            bottom: -15px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 100px;
-            height: 4px;
-            background: linear-gradient(90deg, #667eea, #764ba2);
-            border-radius: 2px;
-        }
-
-        .content-text {
-            font-size: 1.1rem;
-            line-height: 1.8;
-            color: #34495e;
-            text-align: justify;
-        }
-
-        .content-text p {
-            margin-bottom: 20px;
-        }
-
-        .highlight {
-            background: linear-gradient(120deg, #a8edea 0%, #fed6e3 100%);
-            padding: 3px 8px;
-            border-radius: 6px;
-            font-weight: 600;
-        }
-
-        .stellar-highlight {
-            background: linear-gradient(120deg, #0693e3 0%, #764ba2 100%);
-            color: white;
-            padding: 3px 8px;
-            border-radius: 6px;
-            font-weight: 600;
-        }
-
-        .features {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            margin-top: 30px;
-        }
-
-        .feature-card {
-            background: rgba(255, 255, 255, 0.8);
-            padding: 25px;
-            border-radius: 15px;
-            border-left: 4px solid #667eea;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-
-        .feature-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
-        }
-
-        .feature-title {
-            font-size: 1.3rem;
-            font-weight: 600;
-            color: #2c3e50;
-            margin-bottom: 12px;
-        }
-
-        .feature-text {
-            color: #7f8c8d;
-            font-size: 1rem;
-            line-height: 1.6;
-        }
-
-        .widgets-container {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 30px;
-        }
-
-        .widget-wrapper {
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 20px;
-            padding: 25px;
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-            backdrop-filter: blur(10px);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-
-        .widget-wrapper:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
-        }
-
-        .widget-label {
-            font-size: 1.4rem;
-            color: #2c3e50;
-            margin-bottom: 15px;
-            text-align: center;
-            font-weight: 600;
-            padding-bottom: 10px;
-            border-bottom: 2px solid #ecf0f1;
-        }
-
-        @media (max-width: 768px) {
-            .container {
-                padding: 15px;
-            }
-
-            .title {
-                font-size: 2.2rem;
-            }
-
-            .content-title {
-                font-size: 2.2rem;
-            }
-
-            .subtitle {
-                font-size: 1rem;
-            }
-
-            .content-text {
-                font-size: 1rem;
-            }
-
-            .header, .widget-wrapper, .content-section {
-                padding: 20px;
-            }
-
-            .widgets-container {
-                gap: 20px;
-            }
-        }
-
-        .livecoinwatch-widget-5,
-        .livecoinwatch-widget-6 {
-            border-radius: 15px;
-            overflow: hidden;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-            min-height: 60px;
-        }
-
-        .social-buttons {
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-            margin-top: 40px;
-            padding: 30px;
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-            backdrop-filter: blur(10px);
-        }
-
-        .social-buttons a {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            padding: 12px 24px;
-            text-decoration: none;
-            border-radius: 25px;
-            font-weight: 600;
-            font-size: 1rem;
-            transition: all 0.3s ease;
-            min-width: 120px;
-            text-align: center;
-        }
-
-        .social-buttons a:first-child {
-            background: linear-gradient(135deg, #0088cc, #229ed9);
-            color: white;
-        }
-
-        .social-buttons a:first-child:hover {
-            background: linear-gradient(135deg, #006699, #1a7db8);
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(0, 136, 204, 0.3);
-        }
-
-        .social-buttons a.instagram {
-            background: linear-gradient(135deg, #e4405f, #f77737, #fcaf45);
-            color: white;
-        }
-
-        .social-buttons a.instagram:hover {
-            background: linear-gradient(135deg, #d73447, #e85d2b, #f5a623);
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(228, 64, 95, 0.3);
-        }
-
-        .social-buttons a.youtube {
-            background: linear-gradient(135deg, #ff0000, #cc0000);
-            color: white;
-        }
-
-        .social-buttons a.youtube:hover {
-            background: linear-gradient(135deg, #e60000, #b30000);
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(255, 0, 0, 0.3);
-        }
-
-        @media (max-width: 768px) {
-            .social-buttons {
-                flex-direction: column;
-                gap: 15px;
-                padding: 20px;
-            }
-
-            .social-buttons a {
-                min-width: auto;
-                width: 100%;
-            }
-        }
-    </style>
-    <script defer src="https://www.livecoinwatch.com/static/lcw-widget.js"></script>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+      background: #f9f9f9;
+    }
+    .dex-box {
+      max-width: 400px;
+      margin: auto;
+      padding: 20px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    input {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      margin-bottom: 15px;
+    }
+    button {
+      padding: 10px 20px;
+      margin-right: 10px;
+      cursor: pointer;
+    }
+  </style>
 </head>
 <body>
-    <div class="container">
 
+  <div class="dex-box">
+    <h2>Buy/Sell Laam Token</h2>
+    <button onclick="connectWallet()">🔐 Connect Wallet</button>
+    <p id="walletStatus">Wallet not connected</p>
 
-        <section class="content-section">
-            <h2 class="content-title">Laam</h2>
-            <div class="content-text">
-                <p><span class="highlight">Laam</span> is a native token built on <span class="stellar-highlight">Stellar</span>, designed to be a modern solution for digital currency. It has a fixed max supply of <span class="highlight">1,335,577 LAAM</span> — minted only once to preserve scarcity and long-term value.</p>
+    <label>Amount:</label>
+    <input type="number" id="amount" placeholder="Amount">
 
-                <p>Laam is an open project aimed at supporting real-world use cases such as property sales, vehicle rentals, and community-based commerce. It can be easily added to popular wallets by creating a trustline, including Lobstr, Solar, and Freighter.</p>
+    <label>Price (per LAAM):</label>
+    <input type="number" id="price" placeholder="e.g. 0.05">
 
-                <p>The token is designed to be <span class="highlight">secure</span>, <span class="highlight">non-inflationary</span>, and <span class="highlight">fully tradable</span>.</p>
-            </div>
-            <!-- Stellar Expert Widget Centered Properly -->
-<div style="display: flex; justify-content: center; margin-top: 40px;">
-  <div style="max-width: 340px; width: 100%;">
-    <div style="text-align: center; font-weight: bold; margin-bottom: 10px;">Laam Token Summary</div>
-    <iframe 
-      onLoad="var c=this;window.addEventListener('message',function({data,source}){if(c&&source===c.contentWindow&&data.widget===c.src)c.style.height=data.height+'px'},false);"
-      src="https://stellar.expert/widget/public/asset/summary/Laam-GAL4ECDAXNBMJYFCWIJ32HKVIRLCNEXY664CAZYI3EINQWPLXTMEPR64"
-      style="border:none;overflow:hidden;width:100%;min-height:200px;">
-    </iframe>
+    <button onclick="submitOffer('buy')">BUY</button>
+    <button onclick="submitOffer('sell')">SELL</button>
+
+    <p id="txStatus"></p>
   </div>
-</div>
-            
 
-            <div class="features">
-                <div class="feature-card">
-                    <div class="feature-title">🔒 Secure</div>
-                    <div class="feature-text">Built on the proven Stellar blockchain with robust security measures and decentralized architecture</div>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-title">📈 Non-Inflationary</div>
-                    <div class="feature-text">Fixed supply of 1,335,577 LAAM ensures long-term value preservation and scarcity</div>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-title">💱 Fully Tradable</div>
-                    <div class="feature-text">Easy integration with popular Stellar wallets including Lobstr, Solar, and Freighter</div>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-title">🌍 Real-World Use</div>
-                    <div class="feature-text">Designed for practical applications in property sales, vehicle rentals, and commerce</div>
-                </div>
-            </div>
-        </section>
+  <script>
+    const server = new StellarSdk.Server("https://horizon.stellar.org");
+    const laamAsset = new StellarSdk.Asset("Laam", "GAL4ECDAXNBMJYFCWIJ32HKVIRLCNEXY664CAZYI3EINQWPLXTMEPR64");
+    let pubKey = null;
 
-        <div class="widgets-container">
-            <div class="widget-wrapper">
-                <div class="widget-label">Live Cryptocurrency Market</div>
-                <div class="livecoinwatch-widget-5" lcw-base="USD" lcw-color-tx="#0693e3" lcw-marquee-1="coins" lcw-marquee-2="none" lcw-marquee-items="30"></div>
-            </div>
+    async function connectWallet() {
+      try {
+        const res = await albedo.publicKey({});
+        pubKey = res.pubkey;
+        document.getElementById("walletStatus").innerText = "Connected: " + pubKey;
+      } catch (e) {
+        document.getElementById("walletStatus").innerText = "Connection failed.";
+      }
+    }
 
-            <div class="widget-wrapper">
-                <div class="widget-label">Stellar (XLM) Price Chart</div>
-                <div class="livecoinwatch-widget-6" lcw-coin="XLM" lcw-base="USD" lcw-period="d" lcw-color-tx="#ffffff" lcw-color-bg="#505153" lcw-border-w="1"></div>
-            </div>
-        </div>
+    async function submitOffer(type) {
+      if (!pubKey) return alert("Connect your wallet first");
+      const amount = document.getElementById("amount").value;
+      const price = document.getElementById("price").value;
 
-        <div class="social-buttons">
-            <a href="https://t.me/laamcoin" target="_blank">Telegram</a>
-            <a href="https://www.instagram.com/laamcoin" class="instagram" target="_blank">Instagram</a>
-            <a href="https://youtube.com/@laamcoin" class="youtube" target="_blank">YouTube</a>
-        </div>
-    </div>
+      const selling = type === "sell" ? laamAsset : StellarSdk.Asset.native();
+      const buying = type === "buy" ? laamAsset : StellarSdk.Asset.native();
+
+      const account = await server.loadAccount(pubKey);
+      const fee = await server.fetchBaseFee();
+
+      const tx = new StellarSdk.TransactionBuilder(account, {
+        fee,
+        networkPassphrase: StellarSdk.Networks.PUBLIC
+      })
+        .addOperation(StellarSdk.Operation.manageSellOffer({
+          selling,
+          buying,
+          amount,
+          price,
+          offerId: "0"
+        }))
+        .setTimeout(100)
+        .build();
+
+      try {
+        const result = await albedo.tx({xdr: tx.toXDR(), network: "public"});
+        document.getElementById("txStatus").innerText = "✅ Transaction submitted!";
+      } catch (e) {
+        console.error(e);
+        document.getElementById("txStatus").innerText = "❌ Transaction failed";
+      }
+    }
+  </script>
 </body>
 </html>
-
