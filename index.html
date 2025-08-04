@@ -1,25 +1,108 @@
-<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html><html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Test Wallet Connect</title>
-  <script src="https://albedo.link/embed.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Laam Buy/Sell Widget</title>
+  <script src="https://albedo.link/albedo.min.js"></script>
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #f9f9f9;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+    .widget {
+      background: white;
+      padding: 20px;
+      border-radius: 16px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      width: 100%;
+      max-width: 400px;
+    }
+    input, select, button {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+    }
+    button {
+      background: #2f80ed;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .wallet-info {
+      font-size: 0.9em;
+      color: #333;
+      margin-top: 10px;
+    }
+  </style>
 </head>
 <body>
-  <button onclick="connectWallet()">🔐 Connect Wallet</button>
-  <p id="walletStatus">Wallet not connected</p>
+  <div class="widget">
+    <h2>Buy/Sell LAAM</h2>
+    <button id="connectWallet">🔐 Connect Wallet</button>
+    <div class="wallet-info" id="walletInfo"></div><select id="orderType">
+  <option value="buy">Buy LAAM (pay XLM)</option>
+  <option value="sell">Sell LAAM (receive XLM)</option>
+</select>
 
-  <script>
-    async function connectWallet() {
+<input type="number" id="amount" placeholder="Amount of LAAM">
+<input type="number" id="price" placeholder="Price per LAAM (in XLM)">
+<button id="submitOrder">📤 Submit Offer</button>
+
+  </div>  <script>
+    let publicKey = null;
+    const ASSET_CODE = "LAAM";
+    const ISSUER = "GAL4ECDAXNBMJYFCWIJ32HKVIRLCNEXY664CAZYI3EINQWPLXTMEPR64";
+
+    document.getElementById("connectWallet").onclick = async () => {
       try {
         const res = await albedo.publicKey();
-        document.getElementById("walletStatus").innerText = "Connected: " + res.pubkey;
-        console.log("Public key:", res.pubkey);
-      } catch (err) {
-        document.getElementById("walletStatus").innerText = "❌ Failed to connect";
-        console.error(err);
+        publicKey = res.pubkey;
+        document.getElementById("walletInfo").innerText = `Connected: ${publicKey}`;
+      } catch (e) {
+        alert("Connection failed");
       }
-    }
-  </script>
-</body>
-</html>
+    };
+
+    document.getElementById("submitOrder").onclick = async () => {
+      if (!publicKey) return alert("Please connect your wallet first.");
+
+      const type = document.getElementById("orderType").value;
+      const amount = document.getElementById("amount").value;
+      const price = document.getElementById("price").value;
+
+      if (!amount || !price) return alert("Fill in all fields.");
+
+      const buying = type === "buy" ? {
+        asset_code: ASSET_CODE,
+        asset_issuer: ISSUER
+      } : {
+        asset_type: "native"
+      };
+
+      const selling = type === "sell" ? {
+        asset_code: ASSET_CODE,
+        asset_issuer: ISSUER
+      } : {
+        asset_type: "native"
+      };
+
+      try {
+        await albedo.tx({
+          xdr: null,
+          operations: [{
+            type: "manageSellOffer",
+            selling,
+            buying,
+            amount: amount.toString(),
+            price: price.toString(),
+            offer_id: "0"
+          }],
+          network: "public"
+        });
+        alert("Offer submitted!
