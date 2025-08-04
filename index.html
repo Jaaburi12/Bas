@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stellar Token Trading - LAAM/XLM</title>
+    <title>Stellar Token Trading - Multi-Wallet Support</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/stellar-sdk/11.2.2/stellar-sdk.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@albedo-link/intent@0.13.0/lib/albedo.intent.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -55,6 +56,58 @@
         .header p {
             color: #666;
             font-size: 1.1em;
+        }
+
+        .wallet-selection {
+            margin-bottom: 30px;
+        }
+
+        .wallet-selection h3 {
+            color: #333;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .wallet-options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .wallet-option {
+            position: relative;
+        }
+
+        .wallet-option input[type="radio"] {
+            position: absolute;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .wallet-option label {
+            display: block;
+            padding: 15px;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            font-weight: 600;
+            background: white;
+        }
+
+        .wallet-option input[type="radio"]:checked + label {
+            border-color: #667eea;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .wallet-option label:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
         }
 
         .trading-section {
@@ -250,7 +303,7 @@
                 font-size: 2em;
             }
             
-            .button-group {
+            .button-group, .wallet-options {
                 grid-template-columns: 1fr;
             }
         }
@@ -260,13 +313,32 @@
     <div class="container">
         <div class="header">
             <h1>🚀 Stellar Trading</h1>
-            <p>Buy & Sell LAAM tokens with XLM</p>
+            <p>Multi-Wallet Support for Stellar Token Trading</p>
         </div>
 
         <div id="status" class="status hidden"></div>
 
+        <div class="wallet-selection">
+            <h3>
+                <svg class="icon" viewBox="0 0 24 24">
+                    <path d="M21 18v1c0 1.1-.9 2-2 2H5c-1.11 0-2-.9-2-2V5c0-1.1.89-2 2-2h14c1.1 0 2 .9 2 2v1h-9c-1.11 0-2 .9-2 2v8c0 1.1.89 2 2 2h9zm-9-2h10V8H12v8zm4-2.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/>
+                </svg>
+                Select Wallet
+            </h3>
+            <div class="wallet-options">
+                <div class="wallet-option">
+                    <input type="radio" id="lobster" name="wallet" value="lobster" checked>
+                    <label for="lobster">🦞 Lobster Wallet</label>
+                </div>
+                <div class="wallet-option">
+                    <input type="radio" id="albedo" name="wallet" value="albedo">
+                    <label for="albedo">⭐ Albedo.link</label>
+                </div>
+            </div>
+        </div>
+
         <button id="connectWallet" class="btn btn-connect">
-            <span id="connectText">Connect Lobster Wallet</span>
+            <span id="connectText">Connect Wallet</span>
             <span id="connectLoading" class="loading hidden"></span>
         </button>
 
@@ -281,15 +353,15 @@
                 <span id="xlmBalance">-</span>
             </div>
             <div class="balance-item">
-                <span>LAAM Balance:</span>
-                <span id="laamBalance">-</span>
+                <span>Asset Balance:</span>
+                <span id="assetBalance">-</span>
             </div>
         </div>
 
         <div id="priceInfo" class="price-info hidden">
             <h3>📊 Current Market Price</h3>
             <div class="price-display" id="currentPrice">Loading...</div>
-            <small>LAAM/XLM</small>
+            <small id="pricePair">Asset/XLM</small>
         </div>
 
         <div id="tradingInterface" class="hidden">
@@ -359,12 +431,13 @@
         const StellarSdk = window.StellarSdk;
         const server = new StellarSdk.Horizon.Server('https://horizon.stellar.org');
         
-        // LAAM asset details (you'll need to replace with actual LAAM asset details)
-        let CUSTOM_ASSET = null; // Will be set by user input
+        // Asset configuration
+        let CUSTOM_ASSET = null;
         const XLM_ASSET = StellarSdk.Asset.native();
 
         let userPublicKey = null;
         let userAccount = null;
+        let selectedWallet = 'lobster';
 
         // DOM elements
         const connectWalletBtn = document.getElementById('connectWallet');
@@ -383,6 +456,7 @@
         const assetCodeInput = document.getElementById('assetCode');
         const assetIssuerInput = document.getElementById('assetIssuer');
         const setAssetBtn = document.getElementById('setAssetBtn');
+        const walletRadios = document.querySelectorAll('input[name="wallet"]');
 
         // Utility functions
         function showStatus(message, type = 'info') {
@@ -404,6 +478,11 @@
                 connectLoading.classList.add('hidden');
                 connectWalletBtn.disabled = false;
             }
+        }
+
+        function updateConnectButtonText() {
+            const walletName = selectedWallet === 'lobster' ? 'Lobster Wallet' : 'Albedo.link';
+            connectText.textContent = `Connect ${walletName}`;
         }
 
         // Set custom asset function
@@ -431,7 +510,7 @@
                 }
 
                 // Update UI
-                document.getElementById('currentPrice').parentElement.querySelector('small').textContent = `${assetCode}/XLM`;
+                document.getElementById('pricePair').textContent = `${assetCode}/XLM`;
                 tradingSection.classList.remove('hidden');
                 setAssetBtn.textContent = `Asset Set: ${assetCode} ✓`;
                 setAssetBtn.style.background = '#4CAF50';
@@ -465,30 +544,36 @@
             }
 
             const assetCode = CUSTOM_ASSET.isNative() ? 'XLM' : CUSTOM_ASSET.code;
-            document.getElementById('laamBalance').parentElement.querySelector('span:first-child').textContent = `${assetCode} Balance:`;
-            document.getElementById('laamBalance').textContent = assetBalance ? assetBalance.balance + ` ${assetCode}` : `0 ${assetCode}`;
+            document.getElementById('assetBalance').textContent = assetBalance ? assetBalance.balance + ` ${assetCode}` : `0 ${assetCode}`;
         }
 
         // Connect wallet function
         async function connectWallet() {
             try {
                 setLoading(true);
-                showStatus('Connecting to Lobster wallet...', 'info');
+                showStatus(`Connecting to ${selectedWallet === 'lobster' ? 'Lobster wallet' : 'Albedo.link'}...`, 'info');
 
-                // For demo purposes, we'll simulate wallet connection
-                // In a real implementation, you would use SEP-0007 or WalletConnect
-                const demoPublicKey = prompt('Enter your Stellar public key for demo:');
-                
-                if (!demoPublicKey) {
-                    throw new Error('Public key is required');
+                if (selectedWallet === 'albedo') {
+                    // Use Albedo.link
+                    const result = await albedo.publicKey({
+                        token: Math.random().toString(36).substring(2, 15)
+                    });
+                    
+                    userPublicKey = result.pubkey;
+                } else {
+                    // Use Lobster (demo mode)
+                    const demoPublicKey = prompt('Enter your Stellar public key for demo:');
+                    
+                    if (!demoPublicKey) {
+                        throw new Error('Public key is required');
+                    }
+
+                    if (!StellarSdk.StrKey.isValidEd25519PublicKey(demoPublicKey)) {
+                        throw new Error('Invalid public key format');
+                    }
+
+                    userPublicKey = demoPublicKey;
                 }
-
-                // Validate public key format
-                if (!StellarSdk.StrKey.isValidEd25519PublicKey(demoPublicKey)) {
-                    throw new Error('Invalid public key format');
-                }
-
-                userPublicKey = demoPublicKey;
                 
                 // Load account information
                 userAccount = await server.loadAccount(userPublicKey);
@@ -504,80 +589,10 @@
                 if (CUSTOM_ASSET) {
                     updateAssetBalance();
                 } else {
-                    document.getElementById('laamBalance').textContent = '0 LAAM (Set asset first)';
+                    document.getElementById('assetBalance').textContent = '0 (Set asset first)';
                 }
 
                 // Show wallet info and trading interface
                 walletInfo.classList.remove('hidden');
                 tradingInterface.classList.remove('hidden');
-                priceInfo.classList.remove('hidden');
-                
-                connectWalletBtn.textContent = 'Wallet Connected ✓';
-                connectWalletBtn.disabled = true;
-                connectWalletBtn.style.background = '#4CAF50';
-
-                showStatus('Wallet connected successfully!', 'success');
-                
-                // Load market data
-                loadMarketData();
-
-            } catch (error) {
-                console.error('Error connecting wallet:', error);
-                showStatus('Error connecting wallet: ' + error.message, 'error');
-            } finally {
-                setLoading(false);
-            }
-        }
-
-        // Load market data
-        async function loadMarketData() {
-            try {
-                // In a real implementation, you would fetch actual market data
-                // For demo, we'll show a simulated price
-                document.getElementById('currentPrice').textContent = '0.0025 XLM';
-                priceInput.value = '0.0025';
-            } catch (error) {
-                console.error('Error loading market data:', error);
-                document.getElementById('currentPrice').textContent = 'Error loading price';
-            }
-        }
-
-        // Create and submit trade transaction
-        async function createTradeTransaction(isBuy) {
-            try {
-                if (!userAccount) {
-                    throw new Error('Wallet not connected');
-                }
-
-                if (!CUSTOM_ASSET) {
-                    throw new Error('Please set a trading asset first');
-                }
-
-                const amount = parseFloat(amountInput.value);
-                const price = parseFloat(priceInput.value);
-
-                if (!amount || !price || amount <= 0 || price <= 0) {
-                    throw new Error('Please enter valid amount and price');
-                }
-
-                showStatus('Creating transaction...', 'info');
-
-                // Reload account to get latest sequence number
-                userAccount = await server.loadAccount(userPublicKey);
-
-                // Create transaction builder
-                const transaction = new StellarSdk.TransactionBuilder(userAccount, {
-                    fee: StellarSdk.BASE_FEE,
-                    networkPassphrase: StellarSdk.Networks.PUBLIC
-                });
-
-                if (isBuy) {
-                    // Buy custom asset with XLM (create buy offer)
-                    transaction.addOperation(StellarSdk.Operation.manageBuyOffer({
-                        selling: XLM_ASSET,
-                        buying: CUSTOM_ASSET,
-                        buyAmount: amount.toString(),
-                        price: price.toString()
-                    }));
-                } else {
-                    // Sell cus
+                priceInfo.classList.rem
