@@ -1,108 +1,583 @@
-<!DOCTYPE html><html lang="en">
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Laam Buy/Sell Widget</title>
-  <script src="https://albedo.link/albedo.min.js"></script>
-  <style>
-    body {
-      font-family: sans-serif;
-      background: #f9f9f9;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
-    }
-    .widget {
-      background: white;
-      padding: 20px;
-      border-radius: 16px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-      width: 100%;
-      max-width: 400px;
-    }
-    input, select, button {
-      width: 100%;
-      padding: 10px;
-      margin: 10px 0;
-      border-radius: 8px;
-      border: 1px solid #ccc;
-    }
-    button {
-      background: #2f80ed;
-      color: white;
-      font-weight: bold;
-      cursor: pointer;
-    }
-    .wallet-info {
-      font-size: 0.9em;
-      color: #333;
-      margin-top: 10px;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stellar Token Trading - LAAM/XLM</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stellar-sdk/11.2.2/stellar-sdk.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            max-width: 500px;
+            width: 100%;
+            transition: transform 0.3s ease;
+        }
+
+        .container:hover {
+            transform: translateY(-5px);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: #333;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 1.1em;
+        }
+
+        .trading-section {
+            margin-bottom: 30px;
+        }
+
+        .section-title {
+            font-size: 1.3em;
+            color: #333;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .icon {
+            width: 24px;
+            height: 24px;
+            fill: currentColor;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 600;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .button-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            padding: 15px 25px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-buy {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            color: white;
+        }
+
+        .btn-buy:hover {
+            background: linear-gradient(45deg, #45a049, #3d8b40);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(76, 175, 80, 0.3);
+        }
+
+        .btn-sell {
+            background: linear-gradient(45deg, #f44336, #d32f2f);
+            color: white;
+        }
+
+        .btn-sell:hover {
+            background: linear-gradient(45deg, #d32f2f, #b71c1c);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(244, 67, 54, 0.3);
+        }
+
+        .btn-connect {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+
+        .btn-connect:hover {
+            background: linear-gradient(45deg, #764ba2, #667eea);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .status {
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .wallet-info {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .wallet-info h3 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .balance-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            color: #666;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .price-info {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .price-info h3 {
+            color: #1976d2;
+            margin-bottom: 10px;
+        }
+
+        .price-display {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #333;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+                margin: 10px;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .button-group {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
 </head>
 <body>
-  <div class="widget">
-    <h2>Buy/Sell LAAM</h2>
-    <button id="connectWallet">🔐 Connect Wallet</button>
-    <div class="wallet-info" id="walletInfo"></div><select id="orderType">
-  <option value="buy">Buy LAAM (pay XLM)</option>
-  <option value="sell">Sell LAAM (receive XLM)</option>
-</select>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Stellar Trading</h1>
+            <p>Buy & Sell LAAM tokens with XLM</p>
+        </div>
 
-<input type="number" id="amount" placeholder="Amount of LAAM">
-<input type="number" id="price" placeholder="Price per LAAM (in XLM)">
-<button id="submitOrder">📤 Submit Offer</button>
+        <div id="status" class="status hidden"></div>
 
-  </div>  <script>
-    let publicKey = null;
-    const ASSET_CODE = "LAAM";
-    const ISSUER = "GAL4ECDAXNBMJYFCWIJ32HKVIRLCNEXY664CAZYI3EINQWPLXTMEPR64";
+        <button id="connectWallet" class="btn btn-connect">
+            <span id="connectText">Connect Lobster Wallet</span>
+            <span id="connectLoading" class="loading hidden"></span>
+        </button>
 
-    document.getElementById("connectWallet").onclick = async () => {
-      try {
-        const res = await albedo.publicKey();
-        publicKey = res.pubkey;
-        document.getElementById("walletInfo").innerText = `Connected: ${publicKey}`;
-      } catch (e) {
-        alert("Connection failed");
-      }
-    };
+        <div id="walletInfo" class="wallet-info hidden">
+            <h3>💼 Wallet Information</h3>
+            <div class="balance-item">
+                <span>Public Key:</span>
+                <span id="publicKey">-</span>
+            </div>
+            <div class="balance-item">
+                <span>XLM Balance:</span>
+                <span id="xlmBalance">-</span>
+            </div>
+            <div class="balance-item">
+                <span>LAAM Balance:</span>
+                <span id="laamBalance">-</span>
+            </div>
+        </div>
 
-    document.getElementById("submitOrder").onclick = async () => {
-      if (!publicKey) return alert("Please connect your wallet first.");
+        <div id="priceInfo" class="price-info hidden">
+            <h3>📊 Current Market Price</h3>
+            <div class="price-display" id="currentPrice">Loading...</div>
+            <small>LAAM/XLM</small>
+        </div>
 
-      const type = document.getElementById("orderType").value;
-      const amount = document.getElementById("amount").value;
-      const price = document.getElementById("price").value;
+        <div id="tradingInterface" class="hidden">
+            <div class="trading-section">
+                <h2 class="section-title">
+                    <svg class="icon" viewBox="0 0 24 24">
+                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                    </svg>
+                    Asset Configuration
+                </h2>
 
-      if (!amount || !price) return alert("Fill in all fields.");
+                <div class="form-group">
+                    <label for="assetCode">Asset Code</label>
+                    <input type="text" id="assetCode" placeholder="e.g., LAAM, AQUA, USDC" value="LAAM" maxlength="12">
+                </div>
 
-      const buying = type === "buy" ? {
-        asset_code: ASSET_CODE,
-        asset_issuer: ISSUER
-      } : {
-        asset_type: "native"
-      };
+                <div class="form-group">
+                    <label for="assetIssuer">Asset Issuer (Public Key)</label>
+                    <input type="text" id="assetIssuer" placeholder="GXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX">
+                </div>
 
-      const selling = type === "sell" ? {
-        asset_code: ASSET_CODE,
-        asset_issuer: ISSUER
-      } : {
-        asset_type: "native"
-      };
+                <button id="setAssetBtn" class="btn btn-connect" style="margin-bottom: 20px;">
+                    Set Trading Asset
+                </button>
+            </div>
 
-      try {
-        await albedo.tx({
-          xdr: null,
-          operations: [{
-            type: "manageSellOffer",
-            selling,
-            buying,
-            amount: amount.toString(),
-            price: price.toString(),
-            offer_id: "0"
-          }],
-          network: "public"
-        });
-        alert("Offer submitted!
+            <div id="tradingSection" class="trading-section hidden">
+                <h2 class="section-title">
+                    <svg class="icon" viewBox="0 0 24 24">
+                        <path d="M7 14l5-5 5 5z"/>
+                    </svg>
+                    Trading Interface
+                </h2>
+
+                <div class="form-group">
+                    <label for="tradeType">Trade Type</label>
+                    <select id="tradeType">
+                        <option value="buy">Buy Asset with XLM</option>
+                        <option value="sell">Sell Asset for XLM</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="amount">Amount</label>
+                    <input type="number" id="amount" placeholder="Enter amount" step="0.0000001" min="0">
+                </div>
+
+                <div class="form-group">
+                    <label for="price">Price (XLM per Asset)</label>
+                    <input type="number" id="price" placeholder="Enter price" step="0.0000001" min="0">
+                </div>
+
+                <div class="button-group">
+                    <button id="buyBtn" class="btn btn-buy">
+                        📈 Buy Asset
+                    </button>
+                    <button id="sellBtn" class="btn btn-sell">
+                        📉 Sell Asset
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Stellar SDK setup
+        const StellarSdk = window.StellarSdk;
+        const server = new StellarSdk.Horizon.Server('https://horizon.stellar.org');
+        
+        // LAAM asset details (you'll need to replace with actual LAAM asset details)
+        let CUSTOM_ASSET = null; // Will be set by user input
+        const XLM_ASSET = StellarSdk.Asset.native();
+
+        let userPublicKey = null;
+        let userAccount = null;
+
+        // DOM elements
+        const connectWalletBtn = document.getElementById('connectWallet');
+        const connectText = document.getElementById('connectText');
+        const connectLoading = document.getElementById('connectLoading');
+        const statusDiv = document.getElementById('status');
+        const walletInfo = document.getElementById('walletInfo');
+        const tradingInterface = document.getElementById('tradingInterface');
+        const tradingSection = document.getElementById('tradingSection');
+        const priceInfo = document.getElementById('priceInfo');
+        const buyBtn = document.getElementById('buyBtn');
+        const sellBtn = document.getElementById('sellBtn');
+        const tradeTypeSelect = document.getElementById('tradeType');
+        const amountInput = document.getElementById('amount');
+        const priceInput = document.getElementById('price');
+        const assetCodeInput = document.getElementById('assetCode');
+        const assetIssuerInput = document.getElementById('assetIssuer');
+        const setAssetBtn = document.getElementById('setAssetBtn');
+
+        // Utility functions
+        function showStatus(message, type = 'info') {
+            statusDiv.textContent = message;
+            statusDiv.className = `status ${type}`;
+            statusDiv.classList.remove('hidden');
+            setTimeout(() => {
+                statusDiv.classList.add('hidden');
+            }, 5000);
+        }
+
+        function setLoading(isLoading) {
+            if (isLoading) {
+                connectText.classList.add('hidden');
+                connectLoading.classList.remove('hidden');
+                connectWalletBtn.disabled = true;
+            } else {
+                connectText.classList.remove('hidden');
+                connectLoading.classList.add('hidden');
+                connectWalletBtn.disabled = false;
+            }
+        }
+
+        // Set custom asset function
+        function setAsset() {
+            try {
+                const assetCode = assetCodeInput.value.trim().toUpperCase();
+                const assetIssuer = assetIssuerInput.value.trim();
+
+                if (!assetCode) {
+                    throw new Error('Asset code is required');
+                }
+
+                if (assetCode === 'XLM') {
+                    CUSTOM_ASSET = StellarSdk.Asset.native();
+                } else {
+                    if (!assetIssuer) {
+                        throw new Error('Asset issuer is required for non-native assets');
+                    }
+
+                    if (!StellarSdk.StrKey.isValidEd25519PublicKey(assetIssuer)) {
+                        throw new Error('Invalid issuer public key format');
+                    }
+
+                    CUSTOM_ASSET = new StellarSdk.Asset(assetCode, assetIssuer);
+                }
+
+                // Update UI
+                document.getElementById('currentPrice').parentElement.querySelector('small').textContent = `${assetCode}/XLM`;
+                tradingSection.classList.remove('hidden');
+                setAssetBtn.textContent = `Asset Set: ${assetCode} ✓`;
+                setAssetBtn.style.background = '#4CAF50';
+                setAssetBtn.disabled = true;
+
+                // Update balance if wallet is connected
+                if (userAccount) {
+                    updateAssetBalance();
+                }
+
+                showStatus(`Asset ${assetCode} configured successfully!`, 'success');
+
+            } catch (error) {
+                console.error('Error setting asset:', error);
+                showStatus('Error setting asset: ' + error.message, 'error');
+            }
+        }
+
+        // Update asset balance
+        function updateAssetBalance() {
+            if (!userAccount || !CUSTOM_ASSET) return;
+
+            let assetBalance;
+            if (CUSTOM_ASSET.isNative()) {
+                assetBalance = userAccount.balances.find(balance => balance.asset_type === 'native');
+            } else {
+                assetBalance = userAccount.balances.find(balance => 
+                    balance.asset_code === CUSTOM_ASSET.code && 
+                    balance.asset_issuer === CUSTOM_ASSET.issuer
+                );
+            }
+
+            const assetCode = CUSTOM_ASSET.isNative() ? 'XLM' : CUSTOM_ASSET.code;
+            document.getElementById('laamBalance').parentElement.querySelector('span:first-child').textContent = `${assetCode} Balance:`;
+            document.getElementById('laamBalance').textContent = assetBalance ? assetBalance.balance + ` ${assetCode}` : `0 ${assetCode}`;
+        }
+
+        // Connect wallet function
+        async function connectWallet() {
+            try {
+                setLoading(true);
+                showStatus('Connecting to Lobster wallet...', 'info');
+
+                // For demo purposes, we'll simulate wallet connection
+                // In a real implementation, you would use SEP-0007 or WalletConnect
+                const demoPublicKey = prompt('Enter your Stellar public key for demo:');
+                
+                if (!demoPublicKey) {
+                    throw new Error('Public key is required');
+                }
+
+                // Validate public key format
+                if (!StellarSdk.StrKey.isValidEd25519PublicKey(demoPublicKey)) {
+                    throw new Error('Invalid public key format');
+                }
+
+                userPublicKey = demoPublicKey;
+                
+                // Load account information
+                userAccount = await server.loadAccount(userPublicKey);
+                
+                // Update UI
+                document.getElementById('publicKey').textContent = userPublicKey.substring(0, 10) + '...';
+                
+                // Get balances
+                const xlmBalance = userAccount.balances.find(balance => balance.asset_type === 'native');
+                document.getElementById('xlmBalance').textContent = xlmBalance ? xlmBalance.balance + ' XLM' : '0 XLM';
+
+                // Update custom asset balance if set
+                if (CUSTOM_ASSET) {
+                    updateAssetBalance();
+                } else {
+                    document.getElementById('laamBalance').textContent = '0 LAAM (Set asset first)';
+                }
+
+                // Show wallet info and trading interface
+                walletInfo.classList.remove('hidden');
+                tradingInterface.classList.remove('hidden');
+                priceInfo.classList.remove('hidden');
+                
+                connectWalletBtn.textContent = 'Wallet Connected ✓';
+                connectWalletBtn.disabled = true;
+                connectWalletBtn.style.background = '#4CAF50';
+
+                showStatus('Wallet connected successfully!', 'success');
+                
+                // Load market data
+                loadMarketData();
+
+            } catch (error) {
+                console.error('Error connecting wallet:', error);
+                showStatus('Error connecting wallet: ' + error.message, 'error');
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        // Load market data
+        async function loadMarketData() {
+            try {
+                // In a real implementation, you would fetch actual market data
+                // For demo, we'll show a simulated price
+                document.getElementById('currentPrice').textContent = '0.0025 XLM';
+                priceInput.value = '0.0025';
+            } catch (error) {
+                console.error('Error loading market data:', error);
+                document.getElementById('currentPrice').textContent = 'Error loading price';
+            }
+        }
+
+        // Create and submit trade transaction
+        async function createTradeTransaction(isBuy) {
+            try {
+                if (!userAccount) {
+                    throw new Error('Wallet not connected');
+                }
+
+                if (!CUSTOM_ASSET) {
+                    throw new Error('Please set a trading asset first');
+                }
+
+                const amount = parseFloat(amountInput.value);
+                const price = parseFloat(priceInput.value);
+
+                if (!amount || !price || amount <= 0 || price <= 0) {
+                    throw new Error('Please enter valid amount and price');
+                }
+
+                showStatus('Creating transaction...', 'info');
+
+                // Reload account to get latest sequence number
+                userAccount = await server.loadAccount(userPublicKey);
+
+                // Create transaction builder
+                const transaction = new StellarSdk.TransactionBuilder(userAccount, {
+                    fee: StellarSdk.BASE_FEE,
+                    networkPassphrase: StellarSdk.Networks.PUBLIC
+                });
+
+                if (isBuy) {
+                    // Buy custom asset with XLM (create buy offer)
+                    transaction.addOperation(StellarSdk.Operation.manageBuyOffer({
+                        selling: XLM_ASSET,
+                        buying: CUSTOM_ASSET,
+                        buyAmount: amount.toString(),
+                        price: price.toString()
+                    }));
+                } else {
+                    // Sell cus
