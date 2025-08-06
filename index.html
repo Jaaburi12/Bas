@@ -2,78 +2,115 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Buy/Sell Laam Token</title>
-  <script src="https://cdn.jsdelivr.net/npm/albedo/dist/albedo.min.js"></script>
+  <title>Buy/Sell Laam</title>
+  <script src="https://cdn.jsdelivr.net/npm/stellar-sdk@10.5.0/lib/stellar-sdk.min.js"></script>
+  <script src="https://albedo.link/embed.js"></script>
   <style>
-    body { font-family: sans-serif; padding: 30px; max-width: 400px; margin: auto; }
-    input, select, button { margin-top: 10px; width: 100%; padding: 10px; font-size: 16px; }
+    body { font-family: Arial; padding: 20px; background: #f5f5f5; }
+    .box { background: white; padding: 20px; border-radius: 10px; max-width: 500px; margin: auto; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+    .input { margin-bottom: 10px; width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; }
+    .button { padding: 10px 20px; background: #00aaff; color: white; border: none; border-radius: 6px; cursor: pointer; }
+    .button:disabled { background: #ccc; }
   </style>
 </head>
 <body>
 
-  <h2>Buy/Sell Laam</h2>
+<div class="box">
+  <h2>Buy/Sell Laam Token</h2>
+  <button class="button" onclick="connectWallet()">🔗 Connect Wallet</button>
+  <p id="walletStatus">Wallet not connected</p>
 
-  <button onclick="connectWallet()">Connect Wallet</button>
-  <div id="wallet" style="margin: 10px 0;"></div>
+  <hr>
 
-  <select id="action">
-    <option value="buy">Buy Laam</option>
-    <option value="sell">Sell Laam</option>
-  </select>
+  <h3>Buy Laam</h3>
+  <input type="number" id="buyAmount" class="input" placeholder="Amount to buy (LAAM)">
+  <button class="button" onclick="createBuyOffer()">Buy</button>
 
-  <input type="number" id="amount" placeholder="Amount" />
+  <h3>Sell Laam</h3>
+  <input type="number" id="sellAmount" class="input" placeholder="Amount to sell (LAAM)">
+  <button class="button" onclick="createSellOffer()">Sell</button>
+</div>
 
-  <button onclick="submitOffer()">Submit Offer</button>
+<script>
+let publicKey = null;
+const server = new StellarSdk.Server('https://horizon.stellar.org');
+StellarSdk.Networks.PUBLIC;
 
-  <script>
-    let pubkey = null;
-    const LAAM_ISSUER = "GAL4ECDAXNBMJYFCWIJ32HKVIRLCNEXY664CAZYI3EINQWPLXTMEPR64";
+// LAAM token details
+const ASSET_CODE = "Laam";
+const ISSUER = "GAL4ECDAXNBMJYFCWIJ32HKVIRLCNEXY664CAZYI3EINQWPLXTMEPR64";
+const LAAM = new StellarSdk.Asset(ASSET_CODE, ISSUER);
+const XLM = StellarSdk.Asset.native();
 
-    function connectWallet() {
-      albedo.publicKey({ token: "LAAM Connect" })
-        .then(res => {
-          pubkey = res.pubkey;
-          document.getElementById("wallet").innerText = "Wallet: " + pubkey;
-        })
-        .catch(err => alert("Wallet connection failed."));
-    }
+// Connect wallet with Albedo
+function connectWallet() {
+  window.albedo.publicKey({ token: 'laam.online' }).then(res => {
+    publicKey = res.pubkey;
+    document.getElementById("walletStatus").innerText = "Wallet Connected: " + publicKey;
+  }).catch(e => {
+    alert("Wallet connection failed");
+    console.error(e);
+  });
+}
 
-    function submitOffer() {
-      const amount = document.getElementById("amount").value;
-      const action = document.getElementById("action").value;
+// Create Buy Offer: Offer XLM -> Get LAAM
+async function createBuyOffer() {
+  if (!publicKey) return alert("Connect your wallet first");
+  const buyAmount = document.getElementById("buyAmount").value;
+  if (!buyAmount || buyAmount <= 0) return alert("Enter amount");
 
-      if (!pubkey || !amount) {
-        alert("Connect wallet and enter amount");
-        return;
-      }
+  const account = await server.loadAccount(publicKey);
+  const fee = await server.fetchBaseFee();
 
-      const operation = {
-        type: "manageBuyOffer",
-        selling: action === "buy" ? {
-          asset_code: "XLM"
-        } : {
-          asset_code: "Laam",
-          asset_issuer: LAAM_ISSUER
-        },
-        buying: action === "buy" ? {
-          asset_code: "Laam",
-          asset_issuer: LAAM_ISSUER
-        } : {
-          asset_code: "XLM"
-        },
-        buy_amount: amount,
-        price: "1"
-      };
+  const tx = new StellarSdk.TransactionBuilder(account, { fee, networkPassphrase: StellarSdk.Networks.PUBLIC })
+    .addOperation(StellarSdk.Operation.manageSellOffer({
+      selling: XLM,
+      buying: LAAM,
+      amount: buyAmount,
+      price: "1"
+    }))
+    .setTimeout(180)
+    .build();
 
-      albedo.tx({
-        pubkey,
-        network: "public",
-        operations: [operation]
-      })
-      .then(res => alert("Transaction submitted"))
-      .catch(err => alert("Failed: " + err.message));
-    }
-  </script>
+  tx.signatures = [];
+  const xdr = tx.toXDR();
+
+  window.albedo.signTransaction({ xdr }).then(res => {
+    server.submitTransaction(StellarSdk.TransactionBuilder.fromXDR(res.signed_envelope_xdr, StellarSdk.Networks.PUBLIC))
+      .then(() => alert("Buy Offer Submitted"))
+      .catch(err => alert("Error: " + err));
+  });
+}
+
+// Create Sell Offer: Offer LAAM -> Get XLM
+async function createSellOffer() {
+  if (!publicKey) return alert("Connect your wallet first");
+  const sellAmount = document.getElementById("sellAmount").value;
+  if (!sellAmount || sellAmount <= 0) return alert("Enter amount");
+
+  const account = await server.loadAccount(publicKey);
+  const fee = await server.fetchBaseFee();
+
+  const tx = new StellarSdk.TransactionBuilder(account, { fee, networkPassphrase: StellarSdk.Networks.PUBLIC })
+    .addOperation(StellarSdk.Operation.manageSellOffer({
+      selling: LAAM,
+      buying: XLM,
+      amount: sellAmount,
+      price: "1"
+    }))
+    .setTimeout(180)
+    .build();
+
+  tx.signatures = [];
+  const xdr = tx.toXDR();
+
+  window.albedo.signTransaction({ xdr }).then(res => {
+    server.submitTransaction(StellarSdk.TransactionBuilder.fromXDR(res.signed_envelope_xdr, StellarSdk.Networks.PUBLIC))
+      .then(() => alert("Sell Offer Submitted"))
+      .catch(err => alert("Error: " + err));
+  });
+}
+</script>
 
 </body>
 </html>
