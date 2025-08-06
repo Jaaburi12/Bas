@@ -17,9 +17,29 @@
 
 <div class="box">
   <h2>Buy/Sell Laam Token</h2>
-  <button class="button" onclick="connectWallet(https://albedo.link/albedo.js)">🔗 Connect Wallet</button>
-  <p id="walletStatus">Wallet not connected</p>
+  <button onclick="connectWallet()">Connect Wallet (Albedo)</button>
+<p id="wallet-address"></p>
 
+<script>
+  async function connectWallet() {
+    try {
+      const result = await albedo.publicKey({
+        token: 'LAAM',
+        network: 'public'
+      });
+
+      const walletAddress = result.pubkey;
+      document.getElementById('wallet-address').innerText = "Wallet: " + walletAddress;
+
+      // Save to global for later use in offers
+      window.userWallet = walletAddress;
+
+    } catch (e) {
+      alert("Wallet connection failed");
+      console.error(e);
+    }
+  }
+</script>
   <hr>
 
   <h3>Buy Laam</h3>
