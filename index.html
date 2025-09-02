@@ -421,13 +421,14 @@
                     
                     <div class="invoice-totals">
                         <div>Subtotal: <span id="subtotal">0.00</span> Birr</div>
-                        <div>Tax (5%): <span id="tax">0.00</span> Birr</div>
+                        <div>Tax (0%): <span id="tax">0.00</span> Birr</div>
                         <div class="grand-total">Grand Total: <span id="total">0.00</span> Birr</div>
                     </div>
                     
                     <div class="action-buttons">
                         <button class="btn-print" onclick="window.print()"><i class="fas fa-print"></i> Print Receipt</button>
                         <button class="btn-reset" onclick="resetForm()"><i class="fas fa-redo"></i> New Invoice</button>
+                       <button class="btn-save" onclick="sendToGoogleSheet()"><i class="fas fa-save"></i> Save to Google Sheets</button>
                     </div>
                 </div>
             </div>
@@ -601,7 +602,49 @@
                 document.getElementById('inv-number').textContent = invNum;
             }
         }
-    </script>
+  const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxhRMrWUr_GtbbUEBx04w16X959kY3RT3oKKzlbE33LnkVl5kawqZMch0qr2_BFqesK7w/exec";
+
+  function sendToGoogleSheet() {
+    const payload = {
+      invoiceNumber: document.getElementById('inv-number').textContent,
+      customerName: document.getElementById('customer-name').value,
+      customerPhone: document.getElementById('customer-phone').value,
+      customerAddress: document.getElementById('customer-address').value,
+      paymentStatus: document.querySelector('input[name="payment-status"]:checked').value,
+      subtotal: parseFloat(document.getElementById('subtotal').textContent) || 0,
+      tax: parseFloat(document.getElementById('tax').textContent) || 0,
+      total: parseFloat(document.getElementById('total').textContent) || 0,
+      items: Array.from(document.querySelectorAll('#invoice-items-body tr'))
+        .map(r => {
+          const cells = r.querySelectorAll('td');
+          return cells.length >= 4 ? {
+            description: cells[0].textContent,
+            qty: cells[1].textContent,
+            price: cells[2].textContent,
+            total: cells[3].textContent
+          } : null;
+        })
+        .filter(x => x)
+    };
+
+    fetch(WEB_APP_URL, {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify(payload)
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.status === "success") {
+        alert("Xogta waa la diiwaangeliyey Google Sheets!");
+      } else {
+        alert("Error: " + data.message);
+      }
+    })
+    .catch(err => {
+      alert("Network error: " + err);
+    });
+  }
+</script>
 </body>
 </html>
     
